@@ -1,0 +1,223 @@
+from mpython import *
+import urequests
+import network
+import json
+import math
+import time
+
+bmp = bytearray([\
+0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+0X00,0X00,0X10,0X00,0X00,0X04,0X00,0X00,0X00,0X03,0X80,0X00,0X00,0X00,0X3E,0X00,
+0X00,0X00,0XF8,0X00,0X00,0X07,0XC0,0X00,0X00,0X0F,0X8F,0XF8,0X00,0X03,0XFF,0XC0,
+0X00,0X00,0XF8,0X00,0X00,0X07,0XC0,0X00,0X00,0X3F,0XFF,0XF8,0X00,0X03,0XFF,0XF8,
+0X02,0X1F,0XFC,0X00,0X00,0X0F,0XFF,0X80,0X1F,0XFF,0XFF,0XF8,0X00,0X7F,0XFF,0XF8,
+0X3E,0X1F,0XFF,0XC0,0X0F,0XFF,0XFF,0X80,0X1F,0XFF,0XFF,0XF8,0X00,0X7B,0XFF,0XF8,
+0X3E,0X1F,0XFF,0XF0,0X0F,0XFF,0XFF,0X80,0X1F,0XFF,0XFF,0XF8,0X0E,0XF8,0X1E,0X00,
+0X1E,0X1F,0XFF,0XE0,0X0F,0XFF,0XFF,0X80,0X1F,0XF8,0X1E,0X00,0X0E,0XFB,0XFF,0XF0,
+0X1F,0XDF,0XFF,0XE0,0X0F,0XFF,0XFF,0XC0,0X1F,0XC5,0XFF,0X80,0X1E,0XF3,0XFF,0XF0,
+0XFF,0XC0,0XFF,0XE0,0X0F,0XFF,0X80,0X00,0X07,0XFF,0XFF,0X80,0X1E,0XF3,0XFF,0XF0,
+0XFF,0XC0,0X00,0X20,0X00,0X0F,0X80,0X00,0X07,0XBF,0XFF,0XC0,0X1D,0XF3,0XFF,0X00,
+0XFF,0XEF,0XFC,0X00,0X07,0XFF,0XFF,0XE0,0X3F,0XBF,0XFF,0X80,0X3D,0XF0,0XFF,0XFC,
+0XFF,0XEF,0XFF,0X00,0X3F,0XFF,0XFF,0XE0,0X3F,0XBF,0X07,0X80,0X3D,0XF7,0XFF,0XFC,
+0XDF,0X0F,0XFF,0X80,0X3F,0XFF,0XFF,0XE0,0X7F,0XBC,0X07,0XF8,0X3D,0XE7,0XFF,0XFC,
+0X1F,0X1F,0XFF,0X80,0X3F,0XFF,0XFF,0XE0,0X7F,0XBE,0X0F,0XF8,0X3F,0XF7,0XFF,0XFC,
+0X1F,0XDF,0XFF,0X80,0X3F,0XFF,0XFF,0XF0,0X7F,0XBE,0X0F,0XF8,0X1F,0XF0,0X00,0X00,
+0X3F,0XFF,0X07,0X80,0X3E,0X1F,0X80,0X00,0X0F,0XA1,0XFF,0XF8,0X1F,0XFF,0XFF,0XC0,
+0X7F,0XFF,0X0F,0X80,0X00,0X1F,0X80,0X40,0X0F,0X8F,0XFF,0XF8,0X0F,0XF3,0XFF,0XF0,
+0X7F,0XFF,0X0F,0X80,0X1E,0X1F,0X07,0XC0,0X0F,0X9F,0XFF,0XC0,0X03,0XE3,0XFF,0XF0,
+0X7F,0X9F,0X0F,0X80,0X3E,0X1F,0X03,0XC0,0X7F,0X9F,0XF7,0XC0,0X03,0XE3,0XF3,0XF8,
+0X7F,0X1F,0X0F,0X80,0X3E,0X1F,0X03,0XE0,0X7F,0X9F,0X07,0X80,0X03,0XC3,0XFF,0XF8,
+0X0F,0X9E,0X0F,0X00,0X3C,0X1F,0X03,0XE0,0X3F,0X87,0XFF,0X80,0X03,0XC3,0XFF,0X78,
+0X0F,0XBE,0X1F,0X00,0X3F,0X1F,0X0F,0XE0,0X3F,0X8F,0XFF,0X00,0X03,0XC3,0XFF,0X78,
+0X0F,0XBE,0X0F,0XE0,0X3F,0XFF,0XFF,0XE0,0X3F,0X8F,0XFF,0XF0,0X03,0XC3,0XE0,0X78,
+0X08,0X3E,0X0F,0XE0,0X3F,0XFF,0XFF,0XE0,0X0F,0X83,0XFF,0XF0,0X03,0XC3,0XFF,0XF8,
+0X00,0X3E,0X0F,0XF0,0X3F,0XFF,0XFF,0XC0,0X0F,0X87,0XFF,0XF0,0X03,0XC3,0XFF,0XF8,
+0X00,0X3E,0X07,0XF0,0X1F,0XFF,0XFF,0X00,0X0F,0X87,0XE3,0XF0,0X03,0XC3,0XE7,0XF0,
+0X00,0X00,0X03,0XE0,0X00,0XFF,0X80,0X00,0X0F,0X83,0XC0,0X30,0X00,0X03,0XE0,0XF0,
+0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X81,0X00,0X00,0X00,0X03,0XE0,0X70,
+0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+0X00,0X0F,0XC0,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+0X00,0X0F,0X80,0X00,0X01,0XFF,0XF8,0X00,0X00,0X00,0XC0,0X00,0X00,0X00,0X03,0XE0,
+0X00,0X0F,0XF0,0X00,0X0F,0XFF,0XFE,0X00,0X00,0X01,0XE0,0X00,0X00,0X00,0XC3,0XE0,
+0X18,0XFF,0XFE,0X00,0X1F,0XFF,0XFF,0X00,0X00,0X03,0XF0,0X00,0X00,0X00,0XF3,0XE0,
+0X1F,0XFF,0XFF,0X80,0X1F,0XFF,0XFF,0X80,0X00,0X03,0XFB,0X00,0X00,0X01,0XF3,0XE0,
+0X3F,0XFF,0XFF,0XC0,0X1F,0XC0,0X1F,0XC0,0X00,0X01,0XF7,0X80,0X00,0X01,0XF7,0XC0,
+0X3F,0XFF,0XFF,0XC0,0X3F,0X00,0X07,0XC0,0X00,0X3E,0XEF,0XC0,0X3F,0XF9,0XFF,0XFC,
+0X3F,0XFF,0X9F,0XE0,0X3E,0XFF,0XF7,0XC0,0X00,0X3E,0X5F,0XC0,0X1F,0XFD,0XFF,0XFC,
+0X7F,0X1F,0X07,0XE0,0X3E,0XFF,0XF3,0XE0,0X0E,0X7E,0X3F,0X80,0X1F,0XFF,0XFF,0XF8,
+0X7C,0X1F,0X07,0XE0,0X3E,0XFF,0XF3,0XE0,0X1F,0X7E,0X3F,0X00,0X1F,0X7F,0XFF,0XF8,
+0X7C,0X3F,0X03,0XE0,0X3E,0X1F,0XF3,0XE0,0X1F,0X7C,0X7E,0X00,0X1E,0X3F,0XC7,0XF8,
+0XFC,0X3F,0X03,0XE0,0X3C,0X1E,0X01,0XE0,0X1E,0X7C,0XFC,0XC0,0X1F,0XFF,0XC7,0XC0,
+0XFC,0X3F,0X03,0XE0,0X7C,0XFF,0XC1,0XF0,0X3E,0XFD,0XFD,0XE0,0X1F,0XFF,0XC7,0XC0,
+0XFC,0X3F,0X03,0XE0,0X7C,0XFF,0XE1,0XF0,0X3E,0XFB,0XFB,0XF0,0X1F,0XFC,0XC7,0XC0,
+0XFC,0X3F,0X07,0XE0,0X7C,0XFF,0XE1,0XF0,0X3C,0XFF,0XF3,0XF8,0X1E,0X3D,0XFF,0XF8,
+0XFE,0X3F,0X07,0XE0,0X7C,0XFF,0XF9,0XF0,0X3C,0XFF,0XE1,0XF8,0X1F,0XFD,0XFF,0XF8,
+0X7F,0XFF,0X3F,0XE0,0X7C,0X0F,0X3D,0XF0,0X7C,0XFF,0XC0,0XF0,0X1F,0XFD,0XFF,0XF8,
+0X7F,0XFF,0XFF,0XC0,0X7C,0X0F,0X3F,0XF0,0X1C,0XFF,0X80,0X60,0X1F,0XFD,0XFF,0XF8,
+0X3F,0XFF,0XFF,0XC0,0X7D,0XFF,0XFD,0XF0,0X00,0XFF,0X00,0X00,0X1E,0X3C,0XFF,0X80,
+0X1F,0XFF,0XFF,0X80,0X7F,0XFF,0XF9,0XF0,0X00,0XFE,0X00,0X00,0X1E,0X7C,0X0F,0X80,
+0X07,0XFF,0XFF,0X00,0X3E,0XFF,0XF1,0XF0,0X00,0XFC,0X03,0X00,0X0E,0X7C,0X0F,0X80,
+0X00,0XFF,0XF0,0X00,0X3F,0X80,0X03,0XE0,0X01,0XFF,0XFF,0X00,0X0F,0X78,0X0F,0X80,
+0X00,0X7E,0X00,0X00,0X1F,0X80,0X0F,0XE0,0X03,0XFF,0XFF,0X80,0X0F,0X79,0XFF,0XF8,
+0X00,0X7E,0X00,0X00,0X1F,0XFF,0XFF,0XE0,0X07,0XFF,0XFF,0X80,0X00,0X01,0XFF,0XFC,
+0X00,0X7E,0X00,0X00,0X0F,0XFF,0XFF,0XC0,0X03,0XFF,0XFF,0X80,0X00,0X01,0XFF,0XFC,
+0X00,0X7E,0X00,0X00,0X03,0XFF,0XFF,0X00,0X01,0XDF,0XFE,0X00,0X00,0X01,0XFF,0XFC,
+0X00,0X3E,0X00,0X00,0X00,0XFF,0XF8,0X00,0X00,0X80,0X00,0X00,0X00,0X01,0XFF,0XE0,
+0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00
+])
+
+heart = bytearray([\
+0X00,0X00,0X3C,0X3C,0X7E,0X7E,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0XFF,0X7F,0XFE,
+0X7F,0XFE,0X3F,0XFC,0X1F,0XF8,0X0F,0XF0,0X07,0XE0,0X03,0XC0,0X01,0X80,0X00,0X00,
+])
+
+# 绘制启动图
+oled.bitmap(0, 0, bmp, 128, 64, 0)
+oled.show()
+time.sleep(2)
+
+# 绘制软件信息
+oled.fill(0)
+oled.DispChar("疫情数据播报系统 v1.0", 2, 0, 1)
+oled.DispChar("Made with        by 于儿", 2, 16, 1)
+oled.hline(2,38,124,1)
+oled.DispChar("武汉加油!中国加油!", 10, 45,1)
+oled.bitmap(63, 16, heart, 16, 16, 1)
+oled.show()
+time.sleep(2)
+
+oled.fill(0)
+oled.DispChar('疫情数据查询', 30, 10, 1)
+myUI=UI(oled)
+myUI.ProgressBar(10,30,110,8,30)
+oled.DispChar('正在连接Wifi...', 25, 40, 1)
+oled.show()
+# 连接wifi
+my_wifi = wifi()
+my_wifi.connectWiFi('Xiaomi_yverr_plus', 'yuxin1012zgy')
+
+
+oled.fill(0)
+oled.DispChar('疫情数据查询', 30, 10, 1)
+myUI.ProgressBar(10,30,110,8,60)
+oled.DispChar('获取疫情数据...', 25, 40, 1)
+oled.show()
+# 获取数据
+_response = urequests.post('https://www.planplus.cn/ncovdata')
+resp_json = _response.json()
+_response.close()
+data = resp_json['city']  # 城市疫情数据
+confirm = resp_json['confirm']  # 确诊历史数据
+suspect = resp_json['suspect']  # 疑似历史数据
+dead = resp_json['dead']  # 死亡历史数据
+heal = resp_json['heal']  # 治愈历史数据
+total = resp_json['total']  # 全国数据
+date = resp_json['day'].split(' ')[0]  # 数据日期（只要年月日）
+
+oled.fill(0)
+oled.DispChar('疫情数据查询', 30, 10, 1)
+myUI.ProgressBar(10,30,110,8,100)
+oled.DispChar('数据加载完成...', 25, 40, 1)
+
+time.sleep_ms(200)
+index = None  # 城市索引
+
+# 绘制曲线
+# d: 历史数据
+# name: 图线名称
+def draw_line(d, name):
+    num = len(d)
+    max = d[num-1]
+    step = math.floor(120/num)
+    oled.fill(0)
+    oled.DispChar(str(max), 8, 2)
+    oled.DispChar(name, 8, 16)
+    oled.hline(4,62,120,1)
+    oled.vline(4,2,60,1)
+    x1 = 4
+    y1 = 62
+    for i in range(1,num):
+        x2 = x1+step
+        y2 = 62 - round(60*d[i]/max)
+        oled.line(x1, y1, x2, y2, 1)
+        x1 = x2
+        y1 = y2
+    oled.show()    
+   
+# 绘制全国数据   
+def draw_total():
+    oled.fill(0)
+    oled.DispChar('确诊：%d' % (total['confirm']), 0, 0, 1)
+    oled.DispChar('疑似：%d' % (total['suspect']), 0, 16, 1)
+    oled.DispChar('治愈：%d' % (total['heal']), 0, 32, 1)
+    oled.DispChar('死亡：%d' % (total['dead']), 0, 48, 1)
+    oled.DispChar('日期', 98, 32, 1)
+    oled.DispChar(date[-5:], 90, 48, 1)
+    oled.show()
+
+# 绘制各省的数据
+def draw_info():
+    global index
+    d = data[index]
+    y = 0
+    oled.fill(0)
+    oled.DispChar(d['name'], 0, y, 1)
+    oled.DispChar(date, 60, y, 1)
+    y+=16
+    oled.DispChar('确诊 %d 例' % (d['confirm']), 0, y, 1)
+    if d['heal']>0:
+        y+=16
+        oled.DispChar('治愈 %d 例' % (d['heal']), 0, y, 1)
+    if d['dead']>0:
+        y+=16
+        oled.DispChar('死亡 %d 例' % (d['dead']), 0, y, 1)
+    oled.show()
+
+# 按钮A按下的响应函数
+def on_button_a_press(_):
+    global index
+    if index==None:
+        index = len(data)-1
+    else:
+        index -= 1
+        if index<0:
+            index = len(data)-1
+    draw_info()
+
+# 按钮B按下的响应函数
+def on_button_b_press(_):
+    global index 
+    if index == None:
+        index = 0
+    else:
+        index += 1
+        if index>=len(data):
+            index = 0
+    draw_info()
+        
+
+button_a.irq(trigger=Pin.IRQ_FALLING, handler=on_button_a_press)
+button_b.irq(trigger=Pin.IRQ_FALLING, handler=on_button_b_press)
+draw_total()
+
+while True:
+    if(touchPad_P.read() < 100):
+        draw_line(confirm, "确诊人数")
+    elif(touchPad_Y.read() < 100):
+        draw_line(suspect, "疑似人数")
+    elif(touchPad_T.read() < 100):
+        draw_line(heal, "治愈人数")
+    elif(touchPad_H.read() < 100):
+        draw_line(dead, "死亡人数")
+    elif(touchPad_O.read() < 100):
+        draw_total()
+    elif(touchPad_N.read() < 100):
+        index = 0
+        draw_info()
+    time.sleep_ms(100)
