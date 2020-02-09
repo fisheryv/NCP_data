@@ -100,7 +100,7 @@ oled.DispChar('正在连接Wifi...', 25, 40, 1)
 oled.show()
 # 连接wifi
 my_wifi = wifi()
-my_wifi.connectWiFi('Xiaomi_yverr_plus', 'yuxin1012zgy')
+my_wifi.connectWiFi('SSID', 'password')
 
 
 oled.fill(0)
