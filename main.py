@@ -133,10 +133,10 @@ index = None  # 城市索引
 # name: 图线名称
 def draw_line(d, name):
     num = len(d)
-    max = d[num-1]
+    maxitem = max(d)
     step = math.floor(120/num)
     oled.fill(0)
-    oled.DispChar(str(max), 8, 2)
+    oled.DispChar(str(maxitem), 8, 2)
     oled.DispChar(name, 8, 16)
     oled.hline(4,62,120,1)
     oled.vline(4,2,60,1)
@@ -144,7 +144,7 @@ def draw_line(d, name):
     y1 = 62
     for i in range(1,num):
         x2 = x1+step
-        y2 = 62 - round(60*d[i]/max)
+        y2 = 62 - round(60*d[i]/maxitem)
         oled.line(x1, y1, x2, y2, 1)
         x1 = x2
         y1 = y2
